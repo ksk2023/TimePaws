@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WinVibeTime — 使用时间追踪</title>
+<style>
+/* ═══ Design Tokens (dark default) ═══════════════════════════════════════ */
+:root {
+  --bg-primary:    #1C1C1E;
+  --bg-secondary:  #2C2C2E;
+  --bg-elevated:   #2C2C2E;
+  --bg-hover:      #3A3A3C;
+  --bg-active:     #48484A;
+  --bg-input:      #1C1C1E;
+  --text-primary:  #F5F5F7;
+  --text-secondary:#A1A1A6;
+  --text-tertiary: #636366;
+  --accent:        #0A84FF;
+  --accent-hover:  #409CFF;
+  --accent-muted:  #1A2E44;
+  --separator:     #38383A;
+  --sep-light:     #2C2C2E;
+  --danger:        #FF453A;
+  --success:       #30D158;
+  --glass-bg:      #2E2E33;
+  --glass-border:  #48484D;
+  --seg-bg:        #2C2C2E;
+  --seg-active:    #48484A;
+  --shadow-card:   0 2px 8px rgba(0,0,0,.25);
+  --shadow-modal:  0 8px 32px rgba(0,0,0,.5);
+  --traffic-red:   #FF5F57;
+  --traffic-yellow:#FEBC2E;
+  --traffic-green: #28C840;
+  --font-sans:     "SF Pro Display","Segoe UI Variable","Inter","PingFang SC","Microsoft YaHei UI","Helvetica Neue",sans-serif;
+  --font-mono:     "SF Mono","Cascadia Code","JetBrains Mono","Consolas","Menlo",monospace;
+}
+
+[data-theme="light"] {
+  --bg-primary:    #F2F2F7;
+  --bg-secondary:  #FFFFFF;
+  --bg-elevated:   #FFFFFF;
+  --bg-hover:      #E5E5EA;
+  --bg-active:     #D1D1D6;
+  --bg-input:      #FFFFFF;
+  --text-primary:  #1C1C1E;
+  --text-secondary:#8E8E93;
+  --text-tertiary: #AEAEB2;
+  --accent:        #007AFF;
+  --accent-hover:  #0A84FF;
+  --accent-muted:  #D6EAFF;
+  --separator:     #D1D1D6;
+  --sep-light:     #E5E5EA;
+  --glass-bg:      #F0F0F5;
+  --glass-border:  #D1D1D6;
+  --seg-bg:        #E5E5EA;
+  --seg-active:    #FFFFFF;
+  --shadow-card:   0 2px 8px rgba(0,0,0,.08);
+  --shadow-modal:  0 8px 32px rgba(0,0,0,.15);
+}
+
+/* ═══ Reset ══════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-primary);line-height:1.5;min-height:100vh;transition:background .2s,color .2s}
+a{color:var(--accent);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input{font-family:inherit}
+
+/* ═══ Layout ════════════════════════════════════════════════════════════ */
+.app{max-width:960px;margin:0 auto;padding:0 24px 48px}
+
+/* ── Title bar ── */
+.titlebar{display:flex;align-items:center;justify-content:space-between;padding:20px 0 12px}
+.titlebar-left{display:flex;align-items:center;gap:14px}
+.traffic-lights{display:flex;gap:8px}
+.traffic-lights span{width:12px;height:12px;border-radius:50%;display:block;transition:filter .15s}
+.traffic-lights span:nth-child(1){background:var(--traffic-red)}
+.traffic-lights span:nth-child(2){background:var(--traffic-yellow)}
+.traffic-lights span:nth-child(3){background:var(--traffic-green)}
+.traffic-lights:hover span{filter:brightness(1.25)}
+.app-title{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.app-subtitle{font-size:13px;color:var(--text-tertiary);margin-top:1px}
+.titlebar-right{display:flex;gap:8px}
+
+/* ── Pill buttons ── */
+.pill-btn{height:32px;padding:0 14px;border-radius:9999px;font-size:13px;font-weight:500;
+  background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--separator);
+  transition:background .12s,border-color .15s}
+.pill-btn:hover{border-color:var(--accent)}
+.pill-btn:active{background:var(--bg-active)}
+
+/* ── Separator ── */
+.sep{height:1px;background:var(--separator);margin:0 0 8px}
+
+/* ── Segmented control ── */
+.segmented-wrap{display:flex;justify-content:center;padding:8px 0}
+.segmented{display:inline-flex;background:var(--seg-bg);border-radius:8px;padding:3px;gap:2px}
+.seg-btn{height:30px;min-width:72px;padding:0 16px;border-radius:6px;font-size:14px;font-weight:500;
+  color:var(--text-secondary);background:transparent;transition:all .15s}
+.seg-btn.active{background:var(--seg-active);color:var(--text-primary);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg-btn:hover:not(.active){color:var(--text-primary)}
+
+/* ── Pages ── */
+.page{display:none}
+.page.active{display:block}
+
+/* ── Date caption ── */
+.date-caption{font-size:13px;color:var(--text-secondary);margin:16px 0 8px}
+
+/* ═══ Glass Hero Card ═══════════════════════════════════════════════════ */
+.glass-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;
+  padding:24px;box-shadow:var(--shadow-card);transition:border-color .15s,background .2s}
+.glass-card:hover{border-color:var(--accent-hover)}
+.glass-value{font-size:48px;font-weight:700;letter-spacing:-1px;line-height:1.1;
+  font-variant-numeric:tabular-nums}
+.glass-label{font-size:13px;color:var(--text-secondary);margin-top:4px}
+.glass-meta{font-size:13px;color:var(--text-tertiary);margin-top:8px}
+
+/* ═══ Bar Chart ═════════════════════════════════════════════════════════ */
+.chart-card{background:var(--bg-elevated);border:1px solid var(--separator);border-radius:12px;
+  padding:16px 20px 12px;margin-top:12px;transition:background .2s}
+.chart-title{font-size:16px;font-weight:600;margin-bottom:10px}
+.chart-row{display:flex;align-items:center;height:38px;gap:8px;padding:0 4px;
+  border-radius:8px;transition:background .1s}
+.chart-row:hover{background:var(--bg-hover)}
+.chart-emoji{width:28px;text-align:center;font-size:16px;flex-shrink:0}
+.chart-name{width:110px;font-size:13px;color:var(--text-secondary);flex-shrink:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart-bar-wrap{flex:1;height:20px;background:var(--bg-hover);border-radius:10px;overflow:hidden;position:relative}
+.chart-bar{height:100%;border-radius:10px;min-width:20px;position:relative;transition:width .4s ease-out}
+.chart-bar::after{content:'';position:absolute;top:0;left:0;right:0;height:42%;
+  border-radius:10px 10px 0 0;background:rgba(255,255,255,.18)}
+.chart-dur{width:60px;text-align:right;font-family:var(--font-mono);font-size:13px;
+  color:var(--text-secondary);flex-shrink:0}
+.chart-empty{text-align:center;color:var(--text-tertiary);padding:32px 0;font-size:14px}
+
+/* ═══ Expandable App List ═══════════════════════════════════════════════ */
+.app-list-card{background:var(--bg-elevated);border:1px solid var(--separator);border-radius:12px;
+  padding:16px 20px 8px;margin-top:12px;transition:background .2s}
+.app-list-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.app-list-title{font-size:16px;font-weight:600;flex:1}
+.app-search{height:30px;width:160px;padding:0 10px;border-radius:8px;border:1px solid var(--separator);
+  background:var(--bg-input);color:var(--text-primary);font-size:13px;outline:none;transition:border-color .15s}
+.app-search:focus{border-color:var(--accent)}
+.app-search::placeholder{color:var(--text-tertiary)}
+
+.app-card{border-radius:8px;padding:10px 12px;margin-bottom:4px;cursor:pointer;transition:background .12s}
+.app-card:hover{background:var(--bg-hover)}
+.app-card-header{display:flex;align-items:center;gap:10px}
+.app-card-emoji{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.app-card-name{flex:1;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-card-dur{font-family:var(--font-mono);font-size:15px;font-weight:600;flex-shrink:0}
+.app-card-chevron{font-size:18px;color:var(--text-tertiary);width:20px;text-align:center;transition:transform .2s;flex-shrink:0}
+.app-card.expanded .app-card-chevron{transform:rotate(90deg)}
+.app-card-path{font-size:11px;color:var(--text-tertiary);margin:2px 0 0 38px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:500px}
+.app-card-detail{display:none;margin-top:8px;padding-left:38px}
+.app-card.expanded .app-card-detail{display:block;animation:slideDown .18s ease-out}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+.win-row{display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:3px;
+  border-radius:8px;background:var(--bg-primary);border:1px solid var(--sep-light);transition:background .12s}
+.win-row:hover{background:var(--bg-hover)}
+.win-title{flex:1;font-size:13px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.win-hwnd{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);flex-shrink:0}
+.win-dur{font-family:var(--font-mono);font-size:13px;color:var(--text-tertiary);flex-shrink:0}
+
+/* ═══ Calendar ══════════════════════════════════════════════════════════ */
+.cal-card{background:var(--bg-elevated);border:1px solid var(--separator);border-radius:12px;
+  padding:16px 20px;margin-top:12px;transition:background .2s}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav-title{font-size:18px;font-weight:600}
+.cal-nav-btns{display:flex;gap:4px}
+.cal-nav-btn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;color:var(--text-secondary);background:transparent;transition:background .12s}
+.cal-nav-btn:hover{background:var(--bg-hover)}
+.cal-today-btn{height:28px;padding:0 12px;border-radius:6px;font-size:13px;color:var(--accent);background:transparent}
+.cal-today-btn:hover{background:var(--bg-hover)}
+
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:0;margin-bottom:4px}
+.cal-weekday{text-align:center;font-size:12px;color:var(--text-tertiary);padding:4px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0}
+.cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:8px;cursor:pointer;position:relative;transition:background .1s;min-height:48px}
+.cal-cell:hover{background:var(--bg-hover)}
+.cal-cell.other-month{opacity:.35}
+.cal-cell.today .cal-day{background:var(--accent);color:#fff;width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-weight:700}
+.cal-cell.selected:not(.today) .cal-day{background:var(--accent-muted);color:var(--accent);
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:700;box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cal-day{font-size:14px;line-height:1}
+.cal-bar{height:3px;border-radius:2px;background:var(--accent);margin-top:4px;transition:width .3s}
+
+/* ── Calendar popup ── */
+.cal-popup{position:fixed;z-index:1000;background:var(--bg-secondary);border:1px solid var(--separator);
+  border-radius:12px;padding:12px 16px;box-shadow:var(--shadow-modal);min-width:220px;max-width:280px;
+  animation:fadeUp .15s ease-out}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.cal-popup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-popup-date{font-size:14px;font-weight:600}
+.cal-popup-close{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:var(--text-tertiary);background:transparent}
+.cal-popup-close:hover{background:var(--bg-hover)}
+.cal-popup-total{font-size:13px;color:var(--text-secondary);margin-bottom:6px}
+.cal-popup-sep{height:1px;background:var(--separator);margin-bottom:6px}
+.cal-popup-app{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px}
+.cal-popup-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cal-popup-name{flex:1;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-popup-dur{color:var(--text-tertiary);font-size:12px;flex-shrink:0}
+
+/* ── History detail ── */
+.history-detail-header{margin:16px 0 4px}
+.history-detail-date{font-size:16px;font-weight:600}
+.history-detail-total{font-size:13px;color:var(--text-secondary);margin-top:2px}
+
+/* ═══ Toast ═════════════════════════════════════════════════════════════ */
+.toast{position:fixed;bottom:24px;right:24px;z-index:2000;background:var(--bg-secondary);
+  border:1px solid var(--separator);border-radius:12px;padding:12px 20px;box-shadow:var(--shadow-modal);
+  animation:fadeIn .25s ease-out;max-width:340px}
+.toast-title{font-size:14px;font-weight:600;margin-bottom:2px}
+.toast-msg{font-size:13px;color:var(--text-secondary)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ═══ Responsive ════════════════════════════════════════════════════════ */
+@media(max-width:640px){
+  .app{padding:0 12px 32px}
+  .titlebar{flex-wrap:wrap;gap:8px}
+  .glass-value{font-size:36px}
+  .chart-name{width:80px;font-size:12px}
+  .chart-emoji{display:none}
+  .app-search{width:120px}
+  .app-card-path{max-width:200px}
+  .seg-btn{min-width:56px;font-size:13px;padding:0 12px}
+  .cal-cell{min-height:40px}
+  .cal-day{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ── Title Bar ── -->
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <div class="traffic-lights"><span></span><span></span><span></span></div>
+      <div>
+        <div class="app-title">WinVibeTime</div>
+        <div class="app-subtitle">使用时间追踪</div>
+      </div>
+    </div>
+    <div class="titlebar-right">
+      <button class="pill-btn" id="themeBtn" onclick="toggleTheme()">🌙 深色</button>
+      <button class="pill-btn" onclick="refresh()">刷新</button>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ── Segmented Control ── -->
+  <div class="segmented-wrap">
+    <div class="segmented">
+      <button class="seg-btn active" data-page="today" onclick="switchPage('today')">今日</button>
+      <button class="seg-btn" data-page="week" onclick="switchPage('week')">本周</button>
+      <button class="seg-btn" data-page="history" onclick="switchPage('history')">历史</button>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <!-- ── Today Page ── -->
+  <div class="page active" id="page-today">
+    <div class="date-caption" id="today-caption"></div>
+    <div class="glass-card" id="today-glass">
+      <div class="glass-value" id="today-total">—</div>
+      <div class="glass-label">总活跃时长</div>
+      <div class="glass-meta" id="today-meta"></div>
+    </div>
+    <div class="chart-card" id="today-chart-card">
+      <div class="chart-title">应用使用时长</div>
+      <div id="today-chart"></div>
+    </div>
+    <div class="app-list-card" id="today-list-card">
+      <div class="app-list-toolbar">
+        <div class="app-list-title">应用明细</div>
+        <button class="pill-btn" id="today-sort-btn" onclick="toggleSort('today')" style="height:28px;font-size:12px">时长 ↓</button>
+        <input class="app-search" id="today-search" placeholder="搜索应用…" oninput="debounceSearch('today')">
+      </div>
+      <div id="today-apps"></div>
+    </div>
+  </div>
+
+  <!-- ── Week Page ── -->
+  <div class="page" id="page-week">
+    <div class="date-caption" id="week-caption"></div>
+    <div class="glass-card" id="week-glass">
+      <div class="glass-value" id="week-total">—</div>
+      <div class="glass-label">总活跃时长</div>
+      <div class="glass-meta" id="week-meta"></div>
+    </div>
+    <div class="chart-card" id="week-chart-card">
+      <div class="chart-title">本周应用使用时长</div>
+      <div id="week-chart"></div>
+    </div>
+    <div class="app-list-card" id="week-list-card">
+      <div class="app-list-toolbar">
+        <div class="app-list-title">应用明细</div>
+        <button class="pill-btn" id="week-sort-btn" onclick="toggleSort('week')" style="height:28px;font-size:12px">时长 ↓</button>
+        <input class="app-search" id="week-search" placeholder="搜索应用…" oninput="debounceSearch('week')">
+      </div>
+      <div id="week-apps"></div>
+    </div>
+  </div>
+
+  <!-- ── History Page ── -->
+  <div class="page" id="page-history">
+    <div class="date-caption">选择日期查看详情</div>
+    <div class="cal-card" id="cal-card">
+      <div class="cal-nav">
+        <div class="cal-nav-title" id="cal-title"></div>
+        <div class="cal-nav-btns">
+          <button class="cal-nav-btn" onclick="calShift(-1)">‹</button>
+          <button class="cal-today-btn" onclick="calToday()">今天</button>
+          <button class="cal-nav-btn" onclick="calShift(1)">›</button>
+        </div>
+      </div>
+      <div class="cal-weekdays">
+        <div class="cal-weekday">一</div><div class="cal-weekday">二</div>
+        <div class="cal-weekday">三</div><div class="cal-weekday">四</div>
+        <div class="cal-weekday">五</div><div class="cal-weekday">六</div>
+        <div class="cal-weekday">日</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+    <div id="history-detail" style="display:none">
+      <div class="history-detail-header">
+        <div class="history-detail-date" id="history-date"></div>
+        <div class="history-detail-total" id="history-total"></div>
+      </div>
+      <div class="chart-card" id="history-chart-card">
+        <div class="chart-title">当日使用时长</div>
+        <div id="history-chart"></div>
+      </div>
+      <div class="app-list-card" id="history-list-card">
+        <div class="app-list-toolbar">
+          <div class="app-list-title">当日明细</div>
+          <button class="pill-btn" id="history-sort-btn" onclick="toggleSort('history')" style="height:28px;font-size:12px">时长 ↓</button>
+          <input class="app-search" id="history-search" placeholder="搜索应用…" oninput="debounceSearch('history')">
+        </div>
+        <div id="history-apps"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══ App Color / Emoji Map ═══════════════════════════════════════════ */
+const APP_COLORS = {
+  chrome:"#4285F4",msedge:"#3B9AE1",firefox:"#FF7139",safari:"#006CFF",
+  code:"#007ACC",devenv:"#8661C5",idea64:"#FC801D",pycharm64:"#21D789",
+  sublime_text:"#FF9800",explorer:"#FFB900",cmd:"#4D4D4D",powershell:"#012456",
+  windowsterminal:"#4D4D4D",slack:"#611F69",discord:"#5865F2",teams:"#6264A7",
+  telegram:"#0088CC",wechat:"#07C160",spotify:"#1DB954",notion:"#787774",
+  obsidian:"#7C3AED",figma:"#A259FF",photoshop:"#31A8FF",word:"#2B579A",
+  excel:"#217346",powerpoint:"#B7472A",outlook:"#0078D4",onenote:"#7719AA",
+  weixin:"#07C160",code.exe:"#007ACC",pycharm:"#21D789"
+};
+const APP_EMOJI = {
+  chrome:"🌐",msedge:"🌊",firefox:"🦊",safari:"🧭",code:"💻",devenv:"🔮",
+  explorer:"📁",cmd:"⬛",powershell:"🔷",windowsterminal:"⬛",slack:"💬",
+  discord:"🎮",teams:"👥",telegram:"✈️",wechat:"💚",weixin:"💚",spotify:"🎵",
+  notion:"📝",figma:"🎨",word:"📄",excel:"📊",powerpoint:"📽️"
+};
+const CHART_COLORS = ["#0A84FF","#5E5CE6","#30D158","#FF9F0A","#FF453A","#BF5AF2","#64D2FF","#FF375F"];
+
+function appKey(name){ return name.toLowerCase().replace('.exe',''); }
+function getColor(name,i){ return APP_COLORS[appKey(name)] || CHART_COLORS[i % CHART_COLORS.length]; }
+function getEmoji(name){ return APP_EMOJI[appKey(name)] || '▪'; }
+
+/* ═══ Theme ══════════════════════════════════════════════════════════ */
+let themeMode = 'system';
+let currentTheme = 'dark';
+
+function getSystemTheme(){
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function applyTheme(t){
+  currentTheme = t;
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('themeBtn');
+  if(themeMode==='system') btn.textContent = '⚙ 跟随';
+  else if(themeMode==='light') btn.textContent = '☀ 浅色';
+  else btn.textContent = '🌙 深色';
+  renderCalendar();
+}
+
+function toggleTheme(){
+  const cycle = ['system','light','dark'];
+  themeMode = cycle[(cycle.indexOf(themeMode)+1) % 3];
+  applyTheme(themeMode==='system' ? getSystemTheme() : themeMode);
+}
+
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+  if(themeMode==='system') applyTheme(e.matches ? 'light' : 'dark');
+});
+
+applyTheme(getSystemTheme());
+
+/* ═══ Page switching ═════════════════════════════════════════════════ */
+let currentPage = 'today';
+
+function switchPage(id){
+  if(id === currentPage) return;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelector(`.seg-btn[data-page="${id}"]`).classList.add('active');
+  currentPage = id;
+  refresh();
+}
+
+/* ═══ State ══════════════════════════════════════════════════════════ */
+let sortDesc = {today:true, week:true, history:true};
+let searchTimers = {};
+let cachedApps = {today:[], week:[], history:[]};
+let calYear, calMonth, calSelectedDay;
+let calTotals = {};
+
+(function initCal(){
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth() + 1;
+  calSelectedDay = now.toISOString().slice(0,10);
+})();
+
+/* ═══ Utilities ═════════════════════════════════════════════════════ */
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function debounceSearch(page){
+  clearTimeout(searchTimers[page]);
+  searchTimers[page] = setTimeout(() => renderAppList(page), 250);
+}
+
+function toggleSort(page){
+  sortDesc[page] = !sortDesc[page];
+  document.getElementById(page+'-sort-btn').textContent = sortDesc[page] ? '时长 ↓' : '时长 ↑';
+  renderAppList(page);
+}
+
+/* ═══ API Fetch ═════════════════════════════════════════════════════ */
+async function fetchJSON(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error(r.statusText);
+  return r.json();
+}
+
+/* ═══ Render helpers ════════════════════════════════════════════════ */
+function renderChart(containerId, apps){
+  const el = document.getElementById(containerId);
+  const data = apps.slice(0, 8);
+  if(!data.length){ el.innerHTML = '<div class="chart-empty">暂无数据</div>'; return; }
+  const maxVal = Math.max(...data.map(a=>a.total_seconds), 1);
+  el.innerHTML = data.map((a,i) => {
+    const pct = Math.max(2, (a.total_seconds / maxVal) * 100);
+    const color = getColor(a.process_name, i);
+    return `<div class="chart-row">
+      <span class="chart-emoji">${getEmoji(a.process_name)}</span>
+      <span class="chart-name" title="${escHtml(a.process_name)}">${escHtml(a.process_name.length>14?a.process_name.slice(0,12)+'…':a.process_name)}</span>
+      <div class="chart-bar-wrap"><div class="chart-bar" style="width:${pct}%;background:${color}"></div></div>
+      <span class="chart-dur">${a.compact}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderAppList(page, appsOverride){
+  const apps = appsOverride !== undefined ? appsOverride : cachedApps[page];
+  const container = document.getElementById(page+'-apps');
+  const query = (document.getElementById(page+'-search')?.value || '').toLowerCase().trim();
+
+  let filtered = apps;
+  if(query){
+    filtered = apps.filter(a => {
+      if(a.process_name.toLowerCase().includes(query)) return true;
+      if(a.exe_path && a.exe_path.toLowerCase().includes(query)) return true;
+      return (a.windows||[]).some(w => w.window_title.toLowerCase().includes(query));
+    });
+  }
+
+  filtered = [...filtered].sort((a,b) => sortDesc[page]
+    ? b.total_seconds - a.total_seconds
+    : a.total_seconds - b.total_seconds);
+
+  if(!filtered.length){
+    container.innerHTML = `<div style="text-align:center;color:var(--text-tertiary);padding:24px 0">${query?'无匹配结果':'暂无应用数据'}</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map((a,i) => {
+    const emoji = getEmoji(a.process_name);
+    const color = getColor(a.process_name, i);
+    const pathHtml = a.exe_path
+      ? `<div class="app-card-path" title="${escHtml(a.exe_path)}">${escHtml(a.exe_path.length>60?'…'+a.exe_path.slice(-58):a.exe_path)}</div>`
+      : '';
+    const wins = (a.windows||[]).map(w =>
+      `<div class="win-row">
+        <span class="win-title" title="${escHtml(w.window_title)}">${escHtml(w.window_title.length>50?w.window_title.slice(0,48)+'…':w.window_title)}</span>
+        ${w.hwnd?`<span class="win-hwnd">HWND ${w.hwnd}</span>`:''}
+        <span class="win-dur">${w.compact}</span>
+      </div>`
+    ).join('');
+
+    return `<div class="app-card" onclick="this.classList.toggle('expanded')">
+      <div class="app-card-header">
+        <span class="app-card-emoji">${emoji}</span>
+        <span class="app-card-name">${escHtml(a.process_name)}</span>
+        <span class="app-card-dur">${a.compact}</span>
+        <span class="app-card-chevron">›</span>
+      </div>
+      ${pathHtml}
+      <div class="app-card-detail">${wins || '<div style="color:var(--text-tertiary);font-size:13px;padding:4px 0">无窗口详情</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══ Calendar ═════════════════════════════════════════════════════ */
+async function renderCalendar(){
+  document.getElementById('cal-title').textContent = `${calYear}年 ${String(calMonth).padStart(2,'0')}月`;
+
+  try{
+    const data = await fetchJSON(`/api/calendar/${calYear}/${calMonth}`);
+    calTotals = data.totals || {};
+  }catch(e){ calTotals = {}; }
+
+  const grid = document.getElementById('cal-grid');
+  const firstDay = new Date(calYear, calMonth-1, 1);
+  let startOffset = (firstDay.getDay() + 6) % 7; // Monday=0
+  const daysInMonth = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date().toISOString().slice(0,10);
+  const maxTotal = Math.max(...Object.values(calTotals).map(t=>t.total_seconds), 1);
+
+  let cells = '';
+  // Previous month padding
+  const prevDays = new Date(calYear, calMonth-1, 0).getDate();
+  for(let i=startOffset-1; i>=0; i--){
+    const d = prevDays - i;
+    cells += `<div class="cal-cell other-month"><span class="cal-day">${d}</span></div>`;
+  }
+  // Current month
+  for(let d=1; d<=daysInMonth; d++){
+    const dk = `${calYear}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dk === today;
+    const isSel = dk === calSelectedDay;
+    const total = (calTotals[dk]||{}).total_seconds || 0;
+    const barW = total > 0 ? Math.max(4, (total/maxTotal)*100) : 0;
+    const cls = ['cal-cell'];
+    if(isToday) cls.push('today');
+    if(isSel) cls.push('selected');
+    cells += `<div class="${cls.join(' ')}" onclick="selectDay('${dk}')" data-day="${dk}">
+      <span class="cal-day">${d}</span>
+      ${total>0?`<div class="cal-bar" style="width:${barW}%"></div>`:''}
+    </div>`;
+  }
+  // Next month padding
+  const totalCells = startOffset + daysInMonth;
+  const remaining = (7 - totalCells % 7) % 7;
+  for(let d=1; d<=remaining; d++){
+    cells += `<div class="cal-cell other-month"><span class="cal-day">${d}</span></div>`;
+  }
+
+  grid.innerHTML = cells;
+}
+
+function selectDay(dk){
+  calSelectedDay = dk;
+  renderCalendar();
+  loadDayDetail(dk);
+}
+
+function calShift(delta){
+  calMonth += delta;
+  if(calMonth > 12){ calMonth = 1; calYear++; }
+  if(calMonth < 1){ calMonth = 12; calYear--; }
+  renderCalendar();
+}
+
+function calToday(){
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth() + 1;
+  calSelectedDay = now.toISOString().slice(0,10);
+  renderCalendar();
+  loadDayDetail(calSelectedDay);
+}
+
+async function loadDayDetail(dk){
+  const detail = document.getElementById('history-detail');
+  detail.style.display = 'block';
+  document.getElementById('history-date').textContent = dk + ' 统计';
+
+  try{
+    const data = await fetchJSON(`/api/day/${dk}`);
+    document.getElementById('history-total').textContent = '总活跃时长: ' + data.total_formatted;
+    cachedApps.history = data.apps;
+    renderChart('history-chart', data.apps);
+    renderAppList('history', data.apps);
+  }catch(e){
+    document.getElementById('history-total').textContent = '总活跃时长: —';
+    document.getElementById('history-chart').innerHTML = '<div class="chart-empty">暂无数据</div>';
+    document.getElementById('history-apps').innerHTML = '';
+  }
+}
+
+/* ═══ Data refresh ══════════════════════════════════════════════════ */
+async function refresh(){
+  try{
+    if(currentPage === 'today'){
+      const data = await fetchJSON('/api/today');
+      document.getElementById('today-caption').textContent = data.date.replace(/-/g,'年').replace(/年(\d+)$/,'月$1日').replace(/^(\d+)年/,'$1年');
+      document.getElementById('today-total').textContent = data.total_compact;
+      document.getElementById('today-meta').textContent =
+        (data.app_count>0 ? `${data.app_count} 个应用` : '') +
+        (data.top_app!=='—' ? `  ·  最常用  ${data.top_app}` : '');
+      cachedApps.today = data.apps;
+      renderChart('today-chart', data.apps);
+      renderAppList('today');
+    }
+    else if(currentPage === 'week'){
+      const data = await fetchJSON('/api/week');
+      const [from, to] = data.range.split(' — ');
+      const fmt = d => { const p=d.split('-'); return `${p[1]}月${p[2]}日`; };
+      document.getElementById('week-caption').textContent = `${fmt(from)} — ${fmt(to)}`;
+      document.getElementById('week-total').textContent = data.total_compact;
+      document.getElementById('week-meta').textContent =
+        (data.app_count>0 ? `${data.app_count} 个应用` : '') +
+        (data.top_app!=='—' ? `  ·  最常用  ${data.top_app}` : '');
+      cachedApps.week = data.apps;
+      renderChart('week-chart', data.apps);
+      renderAppList('week');
+    }
+    else if(currentPage === 'history'){
+      await renderCalendar();
+      if(calSelectedDay) loadDayDetail(calSelectedDay);
+    }
+  }catch(e){
+    console.error('Refresh error:', e);
+  }
+}
+
+/* ═══ Init ══════════════════════════════════════════════════════════ */
+refresh();
+setInterval(refresh, 10000);
+</script>
+
+</body>
+</html>

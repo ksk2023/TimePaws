@@ -1,0 +1,27 @@
+{
+  "first_run_completed": false,
+  "minimum_timing_seconds": 1.0,
+  "auto_save_seconds": 30,
+  "idle_timeout_seconds": 60,
+  "recover_unsaved_on_startup": true,
+  "launch_on_startup": false,
+  "debug_tracker": false,
+  "export_directory": "exports",
+  "ignore_process_names": [
+    "explorer.exe",
+    "taskmgr.exe",
+    "lockapp.exe",
+    "logonui.exe",
+    "searchhost.exe",
+    "startmenuexperiencehost.exe",
+    "shellexperiencehost.exe"
+  ],
+  "ignore_window_title_keywords": [
+    "Task Manager",
+    "任务管理器",
+    "Windows Input Experience"
+  ],
+  "ignore_exe_path_keywords": [
+    "\\\\Windows\\\\SystemApps\\\\"
+  ]
+}
