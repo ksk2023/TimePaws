@@ -4,7 +4,11 @@ WinVibeTime 是一个轻量的 Windows 前台窗口使用时间监控工具，UI
 
 它会在后台持续监控当前 foreground window，按窗口和按软件分别累计活跃时长，支持系统托盘、统计面板、SQLite 持久化、空闲暂停、忽略列表、CSV 导出，以及启动时恢复未保存的当日数据。
 
+同时提供 **Web 看板**，可通过浏览器在任意设备上查看统计数据，响应式设计适配桌面与移动端。
+
 ## 功能概览
+
+### 核心监控
 
 - 每 `N` 秒轮询一次前台窗口，默认 `1` 秒
 - 以 `HWND` 区分不同窗口，支持同一软件多窗口分别统计
@@ -12,19 +16,33 @@ WinVibeTime 是一个轻量的 Windows 前台窗口使用时间监控工具，UI
 - 持久化保存到 SQLite，运行中每 `30` 秒自动保存一次快照
 - 用户输入空闲超过阈值后自动暂停计时
 - 锁屏 / 待机恢复后自动跳过不可计费区间
+- 程序启动时自动恢复上次未完整快照的数据
+- 启动时自动做单实例检查，避免重复打开多个托盘进程
+
+### 桌面端 (Windows)
+
 - 托盘菜单支持「查看统计」「暂停监控」「恢复监控」「导出今日 CSV」「退出」
 - 托盘菜单支持「设置」，可直接编辑监控参数和忽略规则
 - 支持配置忽略系统窗口，例如 `explorer.exe`、`taskmgr.exe`
 - 支持在设置窗口里开启或关闭开机自启动
 - 第一次启动 GUI 时会弹出一个简短欢迎窗，帮助决定开机自启、调试输出和默认忽略列表
 - 导出成功、暂停/恢复、首次引导完成会显示非阻塞 toast 通知 (fade-in 动画)，不打断操作
-- 提供月历式历史视图，可按月翻阅并查看任意一天的软件与窗口明细
-- 程序启动时自动恢复上次未完整快照的数据
-- 启动时自动做单实例检查，避免重复打开多个托盘进程
+
+### Web 看板 (跨平台)
+
+- 响应式 Web 界面，支持桌面和移动端浏览器访问
+- 今日 / 本周 / 历史 三个视图，分段控制器一键切换
+- 玻璃态英雄卡显示总活跃时长、应用数量、最常用应用
+- 渐变水平柱状图展示 Top 8 应用使用时长
+- 可展开应用卡片列表，支持搜索和按时长排序
+- 月历式历史视图，点击日期查看当天使用详情
+- 深色 / 浅色主题切换 (跟随系统 / 手动)
+- macOS Sonoma / Ventura 设计语言，与桌面端风格统一
+- REST API 接口，可扩展接入其他前端或第三方工具
 
 ## UI 设计系统
 
-WinVibeTime v2 采用 Apple macOS Sonoma / Ventura 设计语言重构了整个界面：
+WinVibeTime v2 采用 Apple macOS Sonoma / Ventura 设计语言重构了整个界面，桌面端和 Web 端共享同一套设计规范：
 
 ### 视觉层次 (深色模式)
 
@@ -37,23 +55,24 @@ WinVibeTime v2 采用 Apple macOS Sonoma / Ventura 设计语言重构了整个�
 
 ### 核心组件
 
-| 组件 | 说明 |
-|------|------|
-| **Traffic Lights** | macOS 风格红/黄/绿圆点装饰标题栏 |
-| **SegmentedPill** | Apple 分段控制器 (今日/本周/历史) |
-| **GlassTotalCard** | 玻璃态英雄卡，超大数字显示总活跃时长 |
-| **AppleStyleBarChart** | Canvas 渐变水平柱状图，emoji 图标 + 等宽字体时长 |
-| **AppleStyleCalendar** | Canvas 月历，今日蓝圈 + 使用量条 + 浮层弹窗 |
-| **ExpandableAppList** | 可展开应用卡片列表，搜索 + 按时长排序 + 滑动展开动画 |
-| **CapsuleButton** | 胶囊按钮，悬停 accent 边框 + 按下变暗反馈 |
+| 组件 | 说明 | 桌面端 | Web 端 |
+|------|------|:------:|:------:|
+| **Traffic Lights** | macOS 风格红/黄/绿圆点装饰标题栏 | ✅ | ✅ |
+| **SegmentedPill** | Apple 分段控制器 (今日/本周/历史) | ✅ | ✅ |
+| **GlassTotalCard** | 玻璃态英雄卡，超大数字显示总活跃时长 | ✅ | ✅ |
+| **BarChart** | 渐变水平柱状图，emoji 图标 + 等宽字体时长 | Canvas | CSS |
+| **Calendar** | 月历，今日蓝圈 + 使用量条 + 浮层弹窗 | Canvas | DOM |
+| **ExpandableAppList** | 可展开应用卡片列表，搜索 + 按时长排序 | ✅ | ✅ |
+| **CapsuleButton** | 胶囊按钮，悬停 accent 边框 + 按下变暗反馈 | ✅ | ✅ |
 
 ### 深色/浅色主题切换
 
-点击标题栏右侧 🌙/☀️ 按钮即可在深色和浅色主题间一键切换。主题系统基于 `design_tokens.py` 中的 `set_theme()` API，所有颜色常量实时切换。
+- **桌面端**: 点击标题栏右侧 🌙/☀️ 按钮切换
+- **Web 端**: 点击标题栏右侧主题按钮，支持「跟随系统 → 浅色 → 深色」三态循环
 
 ### 微交互动画
 
-- **按钮悬停**: 边框平滑过渡到 accent 蓝 (5 步 × 30ms)
+- **按钮悬停**: 边框平滑过渡到 accent 蓝
 - **按钮按下**: 背景色瞬间加深 12%
 - **卡片悬停**: 背景/边框平滑变亮
 - **列表展开**: ease-out 二次缓动 (~150ms)
@@ -67,14 +86,26 @@ WinVibeTime v2 采用 Apple macOS Sonoma / Ventura 设计语言重构了整个�
 
 ## 技术栈
 
-- Python 3.11+
-- `pywin32`
-- `psutil`
-- `sqlite3`
-- `pystray`
-- `customtkinter`
-- `Pillow`
-- `PyInstaller`
+### 后端 & 桌面端
+
+| 技术 | 用途 |
+|------|------|
+| Python 3.11+ | 主语言 |
+| `pywin32` | Win32 API 前台窗口监控 |
+| `psutil` | 进程信息获取 |
+| `sqlite3` | 本地数据持久化 |
+| `pystray` | 系统托盘集成 |
+| `customtkinter` | 桌面 GUI 框架 |
+| `Pillow` | 托盘图标生成 |
+| `PyInstaller` | Windows 打包 |
+
+### Web 端
+
+| 技术 | 用途 |
+|------|------|
+| `Flask` | Web 服务器 & REST API |
+| HTML / CSS / JS | 响应式单页面应用 |
+| CSS Variables | 深色/浅色主题系统 |
 
 ## 项目结构
 
@@ -87,13 +118,13 @@ WinVibeTime/
 ├── src/
 │   └── winvibetime/
 │       ├── __init__.py
-│       ├── app.py
+│       ├── app.py                  # 桌面端入口
 │       ├── config.py
 │       ├── models.py
 │       ├── single_instance.py
-│       ├── storage.py
+│       ├── storage.py              # SQLite 数据管理
 │       ├── system_integration.py
-│       ├── tracker.py
+│       ├── tracker.py              # 前台窗口追踪引擎
 │       └── ui_next/
 │           ├── __init__.py
 │           ├── theme.json
@@ -102,15 +133,18 @@ WinVibeTime/
 │           ├── main_window.py
 │           ├── settings_window.py
 │           └── tray.py
+├── templates/
+│   └── index.html                  # Web 看板页面
 ├── .gitignore
 ├── WinVibeTime.spec
 ├── config.json
-├── main.py
+├── main.py                         # 桌面端启动入口
+├── web_app.py                      # Web 看板启动入口
 ├── README.md
 └── requirements.txt
 ```
 
-### `ui_next/` 模块说明
+### 模块说明
 
 | 文件 | 职责 |
 |------|------|
@@ -120,22 +154,34 @@ WinVibeTime/
 | `settings_window.py` | 设置窗口 + 首次启动引导窗口 |
 | `tray.py` | 系统托盘集成 (pystray) |
 | `theme.json` | customtkinter 主题文件 (同时定义浅色/深色两套默认值) |
+| `web_app.py` | Flask Web 服务器，提供 REST API 和响应式看板页面 |
+| `templates/index.html` | Web 看板单页面，Apple 设计语言，深色/浅色主题 |
 
 ## 截图位置预留
 
 把最终截图放到下面这些路径，README 可以直接引用：
+
+### 桌面端截图
 
 - `assets/screenshots/tray-menu.png`
 - `assets/screenshots/dashboard-today.png`
 - `assets/screenshots/dashboard-week.png`
 - `assets/screenshots/dashboard-history.png`
 
+### Web 看板截图
+
+- `assets/screenshots/web-today.png`
+- `assets/screenshots/web-week.png`
+- `assets/screenshots/web-history.png`
+- `assets/screenshots/web-mobile.png`
+
 建议截图内容：
 
 1. 托盘右键菜单
-2. 今日统计页 (深色模式)
-3. 本周统计页 (浅色模式)
-4. 历史月历页
+2. 桌面端今日统计页 (深色模式)
+3. Web 看板今日页 (深色模式)
+4. Web 看板历史月历页
+5. Web 看板移动端视图
 
 ## 安装与运行
 
@@ -149,7 +195,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 2. 启动程序
+### 2. 启动桌面端
 
 ```powershell
 python main.py
@@ -159,12 +205,72 @@ python main.py
 点击「设置」可修改轮询间隔、自动保存间隔、idle 阈值、导出目录和忽略列表，保存后立即应用。
 历史页支持按月切换，并点击日历中的某一天查看当天的软件总时长和窗口明细。
 
-### 3. Headless 调试
+### 3. 启动 Web 看板
+
+```bash
+python web_app.py [--port 5000] [--db path/to/database.db]
+```
+
+启动后在浏览器中访问 `http://localhost:5000`。
+
+参数说明：
+
+- `--port`: 指定端口，默认 `5000`
+- `--host`: 指定监听地址，默认 `0.0.0.0`
+- `--db`: 指定 SQLite 数据库路径，默认使用应用数据目录
+- `--debug`: 开启 Flask 调试模式
+
+Web 看板会从同一个 SQLite 数据库读取数据，因此可以在 Windows 上运行桌面端收集数据，同时在任意设备上通过 Web 看板查看统计。
+
+### 4. Headless 调试
 
 Linux 或无图形环境下可以验证 tracker 结构：
 
 ```bash
 python -u main.py --debug-tracker --no-ui
+```
+
+## REST API 接口
+
+Web 看板提供以下 API 接口，可用于自定义前端或第三方集成：
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/today` | GET | 获取今日统计数据 |
+| `/api/week` | GET | 获取本周统计数据 |
+| `/api/day/<YYYY-MM-DD>` | GET | 获取指定日期统计数据 |
+| `/api/calendar/<YYYY>/<MM>` | GET | 获取指定月份每日汇总 |
+| `/api/calendar/<YYYY>/<MM>/<DD>/popup` | GET | 获取指定日期 Top 5 应用 |
+
+### 响应示例
+
+```json
+{
+  "date": "2026-05-08",
+  "total_seconds": 28800,
+  "total_formatted": "8h 00m",
+  "total_compact": "8h 00m",
+  "app_count": 12,
+  "top_app": "chrome",
+  "apps": [
+    {
+      "process_name": "chrome",
+      "exe_path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "total_seconds": 14400,
+      "formatted": "4h 00m",
+      "compact": "4h 00m",
+      "windows": [
+        {
+          "window_title": "GitHub - Google Chrome",
+          "hwnd": 123456,
+          "total_seconds": 7200,
+          "formatted": "2h 00m",
+          "compact": "2h 00m"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ## 配置文件
@@ -266,6 +372,8 @@ CSV 包含两类记录：
 - 点击日期弹出浮层弹窗，显示当天 Top 5 应用
 - 选中日期后展示当天的软件时长柱状图
 - 可展开的应用明细列表 (窗口标题 + HWND + 独立时长)
+
+Web 看板同样支持完整的历史视图，包括月历导航、日期选择、使用量条形图和应用明细展开。
 
 ## 使用 PyInstaller 打包
 
@@ -370,12 +478,14 @@ pyinstaller --clean --noconfirm WinVibeTime.spec
 - 当前导出只有今日 CSV，还没有 UI 内建历史报表导出
 - Linux 下只能做代码开发和 headless 结构调试，最终运行与打包必须在 Windows 上验证
 - 当前单实例策略会阻止重复启动第二个 WinVibeTime 进程；如果你要并行调试多个实例，需要临时修改入口逻辑
+- Web 看板为只读视图，不支持修改配置或触发 CSV 导出
 
 ## 建议的发布流程
 
 1. 在 Linux 下完成开发
 2. 在 Windows 虚拟机或实体机安装依赖
 3. 运行 `python main.py` 做托盘和 UI 验证
-4. 运行 `pyinstaller --clean --noconfirm WinVibeTime.spec`
-5. 用干净 Windows 机器测试 `dist/WinVibeTime.exe`
-6. 再决定是否启用 `uac_admin=True` 或开机自启动
+4. 运行 `python web_app.py` 验证 Web 看板
+5. 运行 `pyinstaller --clean --noconfirm WinVibeTime.spec`
+6. 用干净 Windows 机器测试 `dist/WinVibeTime.exe`
+7. 再决定是否启用 `uac_admin=True` 或开机自启动
