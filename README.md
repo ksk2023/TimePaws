@@ -1,4 +1,23 @@
+<div align="center">
+
 # WinVibeTime
+
+**《Windows 前台窗口使用时间监控 · macOS 设计语言》**
+
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078d6?style=flat&logo=windows&logoColor=white)](#安装与运行)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776ab?style=flat&logo=python&logoColor=white)](#技术栈)
+[![GUI](https://img.shields.io/badge/GUI-CustomTkinter-57606a?style=flat)](#ui-设计系统)
+[![Web](https://img.shields.io/badge/Web-Flask-000000?style=flat&logo=flask&logoColor=white)](#web-看板-跨平台)
+[![Stars](https://img.shields.io/github/stars/ksk2023/TimePaws?style=flat&logo=github&label=Stars&color=0969da)](https://github.com/ksk2023/TimePaws/stargazers)
+[![Forks](https://img.shields.io/github/forks/ksk2023/TimePaws?style=flat&logo=github&label=Forks&color=57606a)](https://github.com/ksk2023/TimePaws/network)
+
+**桌面托盘 + Web 看板 · SQLite 持久化 · 深色浅色双主题**
+
+**目录：** [功能概览](#功能概览) · [UI 设计系统](#ui-设计系统) · [技术栈](#技术栈) · [项目结构](#项目结构) · [安装与运行](#安装与运行) · [REST API](#rest-api-接口) · [配置文件](#配置文件) · [打包](#使用-pyinstaller-打包) · [已知局限](#已知局限性)
+
+</div>
+
+---
 
 WinVibeTime 是一个轻量的 Windows 前台窗口使用时间监控工具，UI 采用 macOS Sonoma / Ventura 设计语言，支持深色/浅色主题切换。
 
